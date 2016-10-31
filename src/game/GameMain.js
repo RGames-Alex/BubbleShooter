@@ -20,7 +20,7 @@ exports = Class(ui.View, function(supr)
 
 	this.fieldItems = [];
 	this.nextInLineFieldItems = [];
-	this.directionArrow; 
+	this.directionArrow;
 
 	// PUBLIC METHODS
 
