@@ -32,6 +32,8 @@ exports = Class(GC.Application, function ()
   	
   	this.gameScreenInstance = new GameScreen(device.width, device.height);
   	this.gameScreenInstance.subscribe('gamescreen:exit', this, this.onGameScreenExit);
+    this.gameScreenInstance.subscribe('gamescreen:win', this, this.onGameScreenExit);
+    this.gameScreenInstance.subscribe('gamescreen:lost', this, this.onGameScreenExit);
   };
 
   this._setupStackView = function()

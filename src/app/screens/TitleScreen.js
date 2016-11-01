@@ -48,6 +48,7 @@ exports = Class(ui.View, function (supr)
 			height: fontH,
 			x: (this.style.width - fontW) * .5,
 			y: (this.style.height - fontH) - 10,
+			verticalAlign: 'bottom',
 		});
 	}
 

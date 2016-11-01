@@ -25,24 +25,29 @@ var ballImageArray =
 exports = Class(ui.ImageView, function(supr)
 {
 	this.id = 0;
+	this.typeIndex = 0;
 	this.posX = 0;
 	this.posY = 0;
 	this.isChecked = false;
 	this.isConnected = false;
 
-	this.init = function()
+	this.init = function(opts)
 	{
-		supr(this, 'init');
+		supr(this, 'init', [opts]);
+
+		this.setImage(ballImageArray[0]);
 	};
 
-	this.setItemSize = function(size)
+	this.setSize = function(size)
 	{
-		
+		this.updateOpts({width: size, height: size});
 	};
 
-	this.setItemType = function(typeIndex)
+	this.setType = function(typeIndex)
 	{
-
+		var image = ballImageArray[typeIndex];
+		this.typeIndex = typeIndex;
+		this.setImage(image);
 	};
 
 });

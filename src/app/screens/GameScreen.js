@@ -4,6 +4,7 @@ import src.app.ui.MessageBoard as MessageBoard;
 import src.app.data.GameMasterMessages as GMMessages;
 import src.app.data.LevelData as levelDataArray;
 import animate;
+import src.game.utils.Shaker as shake;
 
 // EVENTS
 const GAME_EXIT = 'gamescreen:exit';
@@ -28,6 +29,7 @@ exports = Class(ui.View, function(supr)
 	this.startup = function(levelId)
 	{
 		this.currentLevel = levelId;
+		this.style.opacity = 1;
 
 		if (levelId === undefined)
 			this.currentLevel = 0;
@@ -36,7 +38,7 @@ exports = Class(ui.View, function(supr)
 
 		var that = this;
 		this.gameInstance.updateOpts({opacity: 0, canHandleEvents: false});
-		animate(this.gameInstance).wait(2500).then({opacity: 1}, 350).then( function() { that.gameInstance.updateOpts({canHandleEvents: true}); } );
+		animate(this.gameInstance).wait(2500).then({opacity: 1}, 500).then( function() {that.gameInstance.updateOpts({canHandleEvents: true}); } );
 	};
 
 	// PRIVATE METHODS
@@ -46,7 +48,7 @@ exports = Class(ui.View, function(supr)
 
 		if ( levelId >= levelDataArray.length )
 		{
-			this._emitGameWin();
+			this._onVictory();
 			return;
 		}	
 
@@ -57,8 +59,8 @@ exports = Class(ui.View, function(supr)
 	this._setupGameInstance = function()
 	{
 		this.gameInstance = new GameMain(this.style.width, this.style.height);
-		this.gameInstance.subscribe('game:levelWon', this, this.onLevelWon);
-		this.gameInstance.subscribe('game:levelLost', this, this.onLevelLost);
+		this.gameInstance.subscribe('game:gameWon', this, this.onLevelWon);
+		this.gameInstance.subscribe('game:gameLost', this, this.onLevelLost);
 		this.addSubview(this.gameInstance);
 	};
 
@@ -84,10 +86,13 @@ exports = Class(ui.View, function(supr)
 	}
 
 	// EVENT HANDLERS
+
 	this.onLevelLost = function()
 	{
 		console.log('level lost');
-		this._emitGameLoss();
+		
+		this.messageTextView.showMessage(GMMessages.lossMessage, 2000);
+		animate(this).wait(1400).then({opacity: 0}, 600).then(this._emitGameLoss);
 	};
 
 	this.onLevelWon = function()
@@ -95,6 +100,13 @@ exports = Class(ui.View, function(supr)
 		console.log('level won');
 		this.currentLevel++;
 		this._buildLevel(this.currentLevel);
+	};
+
+	this._onVictory = function()
+	{
+		this.messageTextView.showMessage(GMMessages.victoryMessage, 2000);
+		animate(this).wait(200).then({opacity: 0}, 600).then(this._emitGameWin);
+		shake(this.gameInstance, 700, 1.7);
 	};
 
 });

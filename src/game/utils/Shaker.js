@@ -5,7 +5,7 @@ var sin = Math.sin;
 var cos = Math.cos;
 var random = Math.random;
 
-exports = shake = function (view, ttl, magnitude)
+exports = function (view, ttl, magnitude)
 {
     var dt = ttl / 16;
     var m = magnitude;
