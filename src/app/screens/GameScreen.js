@@ -36,9 +36,10 @@ exports = Class(ui.View, function(supr)
 
 		this._buildLevel(this.currentLevel);
 
-		var that = this;
-		this.gameInstance.updateOpts({opacity: 0, canHandleEvents: false});
-		animate(this.gameInstance).wait(2500).then({opacity: 1}, 500).then( function() {that.gameInstance.updateOpts({canHandleEvents: true}); } );
+		// TODO: bring this back when testing is over
+		// var that = this;
+		// this.gameInstance.updateOpts({opacity: 0, canHandleEvents: false});
+		// animate(this.gameInstance).wait(2500).then({opacity: 1}, 500).then( function() {that.gameInstance.updateOpts({canHandleEvents: true}); } );
 	};
 
 	// PRIVATE METHODS

@@ -1,5 +1,6 @@
 import ui.View;
-import src.game.GridField as GridField;
+import .GridField;
+import .AimingArrow;
 
 // EVENTS
 const GAME_LOST = 'game:gameLost';
@@ -21,8 +22,10 @@ exports = Class(ui.View, function(supr)
 
 	this.gridFieldInstance;
 	this.shotFieldItems = [];
+	this.aimingArrow;
 
 	this.__inited = false;
+	this._canShoot = false;
 
 	// PUBLIC METHODS
 
@@ -35,6 +38,7 @@ exports = Class(ui.View, function(supr)
 		supr(this, 'init', [ {width: portW, height: portH} ]);
 
 		this._createGridField();
+		this._setupAimingArrow();
 		this._addInputListeners();
 	};
 
@@ -52,11 +56,30 @@ exports = Class(ui.View, function(supr)
 
 	this._setupShotItems = function()
 	{
-		var currentShot = this.gridFieldInstance.getItem(-1, -1, undefined, 250, this.style.height - 100);
-		var nextShot = this.gridFieldInstance.getItem(-1, -1, undefined, 190, this.style.height - 50);
+		// this will be the first item to be shot
+		var currentShot = this.gridFieldInstance.getItem();
+		currentShot.style.x = (this.style.width - this.gridFieldInstance.itemSize) * .5;
+		currentShot.style.y = (this.style.height - this.gridFieldInstance.itemSize);
 
-		this.shotFieldItems = [currentShot, nextShot];
+		// this is the follow-up item to be shot
+		var nextShot = this.gridFieldInstance.getItem();
+		nextShot.style.x = (this.style.width - this.gridFieldInstance.itemSize) * .5 - this.gridFieldInstance.itemSize;
+		nextShot.style.y = this.style.height - this.gridFieldInstance.itemSize * .5;
+
+		this.shotFieldItems = [nextShot, currentShot];
+
+		this._canShoot = true;
 	}
+
+	this._setupAimingArrow = function()
+	{
+		aimingArrow = new AimingArrow();
+		aimingArrowScale = (this.style.height * .35) / aimingArrow.style.width;
+		// aimingArrow.setScale(1);
+		aimingArrow.style.x = 0//this.style.width * .5;
+		aimingArrow.style.y = this.style.height;
+		this.addSubview(aimingArrow);
+	};
 
 	this._createGridField = function()
 	{
@@ -65,7 +88,6 @@ exports = Class(ui.View, function(supr)
 
 	this._addInputListeners = function()
 	{
-		console.log('adding listeners');
 		this.subscribe('InputSelect', this, this.onGameInputStart);
 		this.subscribe('InputOver', this, this.onGameInputOver);
 	}
@@ -80,20 +102,16 @@ exports = Class(ui.View, function(supr)
 
 	this.onGameInputStart = function()
 	{
-		console.log('input start');
 		this.subscribe('InputMove', this, this.onGameInputPointMove);
-		this.emit(GAME_LOST);
 	};
 
 	this.onGameInputOver = function()
 	{
-		console.log('input over');
 		this.unsubscribe('InputMove', this, this.onGameInputPointMove);
-		
 	};
 
 	this.onGameInputPointMove = function()
 	{
-		console.log('input move');
+		
 	};
 });

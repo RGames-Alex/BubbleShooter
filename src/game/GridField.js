@@ -91,7 +91,13 @@ exports = Class(function()
 
 	this.getLowestItemPos = function()
 	{
+		var lowestY = 0;
 
+		for ( var i = 0; i < this.registeredItems.length; i++)
+			if (this.registeredItems[i].posY > lowestY)
+				lowestY = this.registeredItems[i].posY;
+
+		return lowestY;
 	};
 
 	this.removeItem = function(item)
@@ -128,7 +134,7 @@ exports = Class(function()
 			item.style.y = itemCoords.y;
 		}
 
-		item.setType( (type !== undefined) ? type : this.getRandomAvailableTypeIndex() );
+		item.setType( (type !== undefined && type !== null) ? type : this.getRandomAvailableTypeIndex() );
 
 		this.registeredItems.push(item);
 
