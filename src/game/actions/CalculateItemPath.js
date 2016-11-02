@@ -19,7 +19,6 @@ exports = function getPath(item, angleInRad, itemRadius, fieldItemArray)
 
 	var path = [];
 
-	// getting initial path
 	var initialPath = getSegment(item.style.x, item.style.y, item, angleInRad, fieldItemArray);
 	path.push( initialPath );
 	
@@ -29,8 +28,8 @@ exports = function getPath(item, angleInRad, itemRadius, fieldItemArray)
 		if (prevPath.pathComplete == true)
 			break;
 
-		var newAngle =  Math.PI - prevPath.angleInRad;
-		var nextSegment = getSegment( path[i].x, path[i].y, item, newAngle, fieldItemArray );
+		var newAngle = Math.PI - prevPath.angleInRad;
+		var nextSegment = getSegment( prevPath.x, prevPath.y, item, newAngle, fieldItemArray );
 		path.push(nextSegment);
 	};
 
@@ -39,20 +38,22 @@ exports = function getPath(item, angleInRad, itemRadius, fieldItemArray)
 
 function getSegment(itemCoordX, itemCoordY, item, angleInRad, fieldItemArray)
 {
-	console.log(itemCoordX, itemCoordY, angleInRad);
 	var pathPoint = {x: 0, y: 0, angleInRad: angleInRad, pathComplete: false};
 
-	var fX = item.style.x;
-	var fY = item.style.y;
+	var fX = itemCoordX;
+	var fY = itemCoordY;
 
 	var counter = 0;
+
+	var cosResult = Math.cos(angleInRad);
+	var sinResult = Math.sin(angleInRad);
 
 	while(true)
 	{
 		counter += COUNTER_STEP;
 
-		fX = item.style.x + Math.cos(angleInRad) * counter;
-		fY = item.style.y + Math.sin(angleInRad) * counter;
+		fX = itemCoordX + cosResult * counter;
+		fY = itemCoordY + sinResult * counter;
 
 		if (fX <= _itemRadius)
 		{

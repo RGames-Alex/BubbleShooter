@@ -9,6 +9,7 @@ exports = Class(function()
 	this.registeredItems = []; // this is a 1d array of items
 
 	this.itemSize = 0; // item size in pixels
+	this.itemRadius = 0;
 
 	this.gridWidth = 0; // the grid width size in item-units
 	this.gridHeight = 0; // this grid height size in item-units
@@ -41,10 +42,19 @@ exports = Class(function()
 	{
 		this.gridWidth = w;
 		this.itemSize = this._getItemSize();
+		this.itemRadius = this.itemSize * .5;
 		this.gridHeight = this._getMaxGridHeight();
 		this.availableItemTypes = types;
 
-		__itemPool.updateAllOpts({width: this.itemSize, height: this.itemSize});
+		__itemPool.updateAllOpts(
+		{
+			width: this.itemSize,
+			height: this.itemSize,
+			offsetX: -this.itemSize * .5,
+			offsetY: -this.itemSize * .5,
+			anchorX: -this.itemSize * .5,
+			anchorY: -this.itemSize * .5,
+		});
 
 		for ( var i = 0; i < w; i++ )
 			for ( var j = 0; j < h; j++ )
@@ -59,7 +69,6 @@ exports = Class(function()
 		{
 			this.removeItem(this.registeredItems[0]);
 		}
-
 	};
 
 	this.getDisconnectedItems = function()
@@ -72,21 +81,64 @@ exports = Class(function()
 
 	};
 
+	this.getItemByPos = function(posX, posY)
+	{
+		var item;
+		for (var i = 0; i < this.registeredItems.length; i++)
+		{
+			item = this.registeredItems[i];
+
+			if (item.posX == posX && item.posY == posY)
+				return item;
+		}
+		return null;
+	}
+
 	this.getNeighbours = function(originPosX, originPosY)
 	{
+		var output = [];
+		var deltas = (this.isEven(originPosY) === true) ? this.evenDeltas : this.oddDeltas;
 
+		var delta;
+		for (var i = 0; i < deltas.length; i++)
+		{
+			delta = deltas[i];
+
+			var item = this.getItemByPos(originPosX + delta[0], originPosY + delta[1]);
+			if (item === null)
+				continue;
+			output.push(item);
+		}
+
+		return output;
 	};
+
+	this.isEven = function (val)
+	{
+		if (val == 0) return true;
+			var frac = val / 2;
+		return (frac >> 0 == frac) ? true : false;
+	}
 
 	this.getItemCoordsByPos = function(posX, posY)
 	{
-		var itemX = (posY % 2 == 0) ? posX * this.itemSize : (posX + .5) * this.itemSize;
-		var itemY = posY * .85 * this.itemSize;
+		var itemX = (posY % 2 == 0) ? posX * this.itemSize + (this.itemSize * .5) : (posX + .5) * this.itemSize + (this.itemSize * .5);
+		var itemY = posY * .85 * this.itemSize + (this.itemSize * .5);
 		return { x: itemX, y: itemY };
 	};
 
 	this.getItemPosByCoords = function(coordX, coordY)
 	{
+		var p = {x: 0, y: 0};
 
+		p.y = Math.floor( (Math.round( (coordY - this.itemRadius) / this.itemSize / .85 ) ) );
+
+		if (p.y % 2 == 0)
+			p.x = Math.floor( coordX / this.itemSize );
+		else
+			p.x = Math.floor( (coordX - this.itemRadius) / this.itemSize);
+
+		return p;
 	};
 
 	this.getLowestItemPos = function()
@@ -116,7 +168,7 @@ exports = Class(function()
 		return item;
 	};
 
-	this.getItem = function(posX, posY, type, x, y)
+	this.getItem = function(posX, posY, type, x, y, register)
 	{
 		var item = __itemPool.getItem();
 		item.posX = (posX !== undefined) ? posX : -1;
@@ -136,7 +188,11 @@ exports = Class(function()
 
 		item.setType( (type !== undefined && type !== null) ? type : this.getRandomAvailableTypeIndex() );
 
-		this.registeredItems.push(item);
+		if (register === undefined)
+			register = true;
+
+		if (register === true)
+			this.registeredItems.push(item);
 
 		if (__defaultViewContainer !== null)
 			__defaultViewContainer.addSubview(item);
@@ -150,6 +206,21 @@ exports = Class(function()
 		return this.availableItemTypes[randAccessIndex];
 	}
 
+	this.registerItem = function(item)
+	{
+		this.registeredItems.push(item);
+	};
+
+	this.unregisterItem = function(item)
+	{
+		for (var i = this.registeredItems.length; i >= 0; i--)
+			if (this.registeredItems[i] === item)
+			{
+				this.registeredItems.splice(i, 1);
+				break;
+			}
+	}
+
 	// PRIVATE METHODS
 
 	this._poolFieldItems = function(num)
@@ -161,13 +232,13 @@ exports = Class(function()
 	this._getItemSize = function()
 	{
 		var rectSize = (this.fieldWidth / this.gridWidth);
-		return rectSize * .85;
+		return rectSize - (rectSize / this.gridWidth) * .5 + .25;
 	};
 
 	// TODO: refactor this, remove unneeded arguments
-	this._getMaxGridHeight = function(_itemSize, _fieldW, _fieldH)
+	this._getMaxGridHeight = function()
 	{
-		return _fieldH / this.gridWidth * .85;
+		return Math.floor( this.fieldHeight / this.itemSize * .85);
 	};
 
 });

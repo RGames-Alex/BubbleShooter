@@ -34,13 +34,20 @@ exports = Class(ui.ImageView, function(supr)
 	this.init = function(opts)
 	{
 		supr(this, 'init', [opts]);
-
 		this.setImage(ballImageArray[0]);
 	};
 
 	this.setSize = function(size)
 	{
-		this.updateOpts({width: size, height: size});
+		this.updateOpts(
+		{
+			width: size,
+			height: size,
+			offsetX: -size * .5,
+			offsetY: -size * .5,
+			anchorX: -size * .5,
+			anchorY: -size * .5,
+		});
 	};
 
 	this.setType = function(typeIndex)
