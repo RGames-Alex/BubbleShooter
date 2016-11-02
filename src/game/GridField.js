@@ -73,12 +73,91 @@ exports = Class(function()
 
 	this.getDisconnectedItems = function()
 	{
+		console.log('getDisconnectedItems');
 
+		var output = [];
+		var that = this;
+
+		for (var i = 0; i < this.registeredItems.length; i++)
+			this.registeredItems[i].isConnected = false;
+
+		var checkConnections = function(item)
+		{
+			var neighbours = that.getNeighbours(item.posX, item.posY);
+
+			var n_item;
+			for (var k = 0; k < neighbours.length; k++)
+			{
+				n_item = neighbours[k];
+
+				if (n_item.isChecked == true)
+					continue;
+
+				n_item.isChecked = n_item.isConnected = true;
+
+				checkConnections(n_item);
+			};
+		};
+
+		var sealingItem;
+		for (var j = 0; j < this.gridWidth; j++)
+		{
+			sealingItem = this.getItemByPos(j, 0);
+
+			if (sealingItem == null)
+				continue;
+
+			sealingItem.isConnected = true;
+			sealingItem.isChecked = true;
+
+			checkConnections(sealingItem);
+		}
+
+		for (var i = 0; i < this.registeredItems.length; i++)
+			this.registeredItems[i].isChecked = false;
+
+		for (var l = 0; l < this.registeredItems.length; l++)
+			if (this.registeredItems[l].isConnected == false)
+				output.push(this.registeredItems[l]);
+
+		return output;
 	};
 
-	this.getConnectedItemsByType = function(originPosX, originPosY, type)
+	this.getConnectedItemsByType = function(originPosX, originPosY, typeIndex)
 	{
+		var output = [];
+		var that = this;
 
+		// a recursive function to search through the connected items
+		var reccSearch = function(__posX, __posY)
+		{
+			var neighbours = that.getNeighbours(__posX, __posY);
+
+			var n_item;
+			for (var k = 0; k < neighbours.length; k++)
+			{
+				n_item = neighbours[k];
+
+				if (n_item.isChecked == true)
+					continue;
+
+				n_item.isChecked = true;
+
+				if (n_item.typeIndex == typeIndex)
+				{
+					output.push(n_item);
+					reccSearch(n_item.posX, n_item.posY);
+				}
+			};
+		};
+
+		reccSearch(originPosX, originPosY);
+
+		// uncheck all the items
+		for ( var i = 0; i < this.registeredItems.length; i++)
+			this.registeredItems[i].isChecked = false;
+
+		return output;
 	};
 
 	this.getItemByPos = function(posX, posY)
@@ -97,7 +176,7 @@ exports = Class(function()
 	this.getNeighbours = function(originPosX, originPosY)
 	{
 		var output = [];
-		var deltas = (this.isEven(originPosY) === true) ? this.evenDeltas : this.oddDeltas;
+		var deltas = (this.isEven(originPosY) === true) ? evenDeltas : oddDeltas;
 
 		var delta;
 		for (var i = 0; i < deltas.length; i++)
@@ -154,7 +233,7 @@ exports = Class(function()
 
 	this.removeItem = function(item)
 	{
-		for (var i = 0; i < this.registeredItems.length; i++)
+		for (var i = this.registeredItems.length; i >= 0; i--)
 			if (this.registeredItems[i] === item)
 			{
 				this.registeredItems.splice(i, 1);

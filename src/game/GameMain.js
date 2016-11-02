@@ -2,7 +2,11 @@ import ui.View;
 import .GridField;
 import .AimingArrow;
 import .ShotCounter;
+import .FloatingText;
 import .actions.CalculateItemPath as calculatePath;
+import .actions.PopMatchingItems as popItems;
+import .actions.AddLines as addLines;
+import .actions.DropItems as dropItems;
 import animate;
 
 
@@ -26,6 +30,7 @@ exports = Class(ui.View, function(supr)
 
 	this.gridFieldInstance;
 	this.shotCounter;
+	this.floatingTextViewer;
 	
 	this.shotFieldItems = [];
 	this.nextShotPoint = {x: 0, y: 0};
@@ -54,6 +59,7 @@ exports = Class(ui.View, function(supr)
 		this._createGridField();
 		this._createShotCounter();
 		this._setupAimingArrow();
+		this._setupFloatingText();
 	};
 
 	this.buildLevel = function(levelData)
@@ -63,7 +69,7 @@ exports = Class(ui.View, function(supr)
 		this.currentLevelData = levelData;
 		this.gridFieldInstance.build(this.currentLevelData.startGridWidth, this.currentLevelData.startGridHeight, this.currentLevelData.availableItems);
 		this._calculateShotPoints();
-
+		this._setupShotCounter(levelData.minMoves, levelData.maxMoves);
 		this._setupShotItems();
 		this._addInputListeners();
 	};
@@ -100,33 +106,23 @@ exports = Class(ui.View, function(supr)
 
 	this._evaluateShot = function(shotItem)
 	{
+		this.gridFieldInstance.registerItem(shotItem);
 
-		// var connectedChain = this.gridFieldInstance.getConnectedItemsByType(shotItem.posX, shotItem.posY, shotItem.typeIndex);
-		// if (connectedChain.length > 2)
-		// {
-		// 	// popItems
-		// }
-		// else
-		// {
-		// 	// tick the counter
-		// }
+		var connectedChain = this.gridFieldInstance.getConnectedItemsByType(shotItem.posX, shotItem.posY, shotItem.typeIndex);
+		if (connectedChain.length > 2)
+			popItems(this, connectedChain);
+		else
+			this.shotCounter.step();
 
-		// var disconnectedItems = this.gridFieldInstance.getDisconnectedItems();
-		// // drop the disconnected items
-		console.log(this.gridFieldInstance.getLowestItemPos(), this.gridFieldInstance.gridHeight - 1);
-
+		dropItems(this, this.gridFieldInstance.getDisconnectedItems());
+		
 		if (this.gridFieldInstance.getLowestItemPos() >= this.gridFieldInstance.gridHeight - 1)
-		{
 			this.onGameLost();
-		}
-
-		// TODO: find a better way to allow shooting
-		animate(this).wait(1000).then(bind(this, function(){this._canShoot = true;}));
 	};
 
 	this._reload = function()
 	{
-		var newShot = this.gridFieldInstance.getItem();
+		var newShot = this.gridFieldInstance.getItem(undefined, undefined, undefined, undefined, undefined, false);
 		newShot.style.x = this.followupShotPoint.x;
 		newShot.style.y = this.followupShotPoint.y + this.gridFieldInstance.itemSize;
 		animate(newShot).now({y: this.followupShotPoint.y}, 300);
@@ -134,8 +130,9 @@ exports = Class(ui.View, function(supr)
 		this.shotFieldItems.splice(0, 0, newShot);
 		
 		var currentShot = this.shotFieldItems[1];
-		animate(currentShot).now({x: this.nextShotPoint.x, y: this.nextShotPoint.y}, 300);
-	}
+		animate(currentShot).now({x: this.nextShotPoint.x, y: this.nextShotPoint.y}, 300)
+		.then( bind(this, function() { this._canShoot = true; }) );
+	};
 
 	this._calculateShotPoints = function()
 	{
@@ -144,24 +141,30 @@ exports = Class(ui.View, function(supr)
 
 		this.followupShotPoint.x = this.style.width / 2 - this.gridFieldInstance.itemSize;
 		this.followupShotPoint.y = this.style.height;
-	}
+	};
+
+	this._setupShotCounter = function(minMoves, maxMoves)
+	{
+		this.shotCounter.setMinCounter(minMoves);
+		this.shotCounter.setMaxCounter(maxMoves);
+	};
 
 	this._setupShotItems = function()
 	{
 		// this will be the first item to be shot
-		var currentShot = this.gridFieldInstance.getItem();
+		var currentShot = this.gridFieldInstance.getItem(undefined, undefined, undefined, undefined, undefined, false);
 		currentShot.style.x = this.nextShotPoint.x;
 		currentShot.style.y = this.nextShotPoint.y;
 
 		// this is the follow-up item to be shot
-		var nextShot = this.gridFieldInstance.getItem();
+		var nextShot = this.gridFieldInstance.getItem(undefined, undefined, undefined, undefined, undefined, false);
 		nextShot.style.x = this.followupShotPoint.x;
 		nextShot.style.y = this.followupShotPoint.y;
 
 		this.shotFieldItems = [nextShot, currentShot];
 
 		this._canShoot = true;
-	}
+	};
 
 	// TODO: add this to the view
 	this._setupAimingArrow = function()
@@ -180,6 +183,12 @@ exports = Class(ui.View, function(supr)
 		this.shotCounter = new ShotCounter();
 	};
 
+	this._setupFloatingText = function()
+	{
+		this.floatingTextViewer = new FloatingText(this.style.width, this.style.height);
+		this.addSubview(this.floatingTextViewer);
+	}
+
 	this._addInputListeners = function()
 	{
 		if (this._listenersActive === true)
@@ -188,6 +197,8 @@ exports = Class(ui.View, function(supr)
 		
 		this.subscribe('InputSelect', this, this.onGameInputStart);
 		this.subscribe('InputOver', this, this.onGameInputOver);
+
+		this.shotCounter.subscribe('counter:rotationComplete', this, this.onCounterRotationComplete);
 	}
 
 	this._removeInputListeners = function()
@@ -198,9 +209,17 @@ exports = Class(ui.View, function(supr)
 
 		this.unsubscribe('InputSelect', this, this.onGameInputStart);
 		this.unsubscribe('InputOver', this, this.onGameInputOver);
+
+		this.shotCounter.unsubscribe('counter:rotationComplete', this, this.onCounterRotationComplete);
 	};
 
 	// EVENT HANDLERS
+
+	this.onCounterRotationComplete = function()
+	{
+		console.log(this.currentLevelData);
+		addLines(this, this.currentLevelData.linesPerWave);
+	}
 
 	this.onGameInputStart = function(e)
 	{
@@ -227,6 +246,11 @@ exports = Class(ui.View, function(supr)
 	this.onGameLost = function()
 	{
 		this._removeInputListeners();
+
+		// adding shot items to the grid so that they'd be removed with other grid-items on reset
+		this.gridFieldInstance.registerItem(this.shotFieldItems[0]);
+		this.gridFieldInstance.registerItem(this.shotFieldItems[1]);
+
 		this.emit(GAME_LOST);
 	}
 });

@@ -5,32 +5,35 @@ import device;
 
 exports = Class(ui.View, function (supr)
 {
-	this.init = function (opts)
+	this.init = function (w, h)
 	{
-		opts = merge(opts,
+		opts =
 		{
 			x: 0,
 			y: 0,
-			width: device.width,
-			height: device.height,
+			width: w,
+			height: h,
 			zIndex: 9999
-		});
+		};
 
 		supr(this, 'init', [opts]);
 	}
 
-	this.showText = function(text, x, y, duration)
+	this.showText = function(text, x, y, duration, direction)
 	{
-		if (text == 'undefined')
+		if (text === undefined)
 			return;
 
-		if (x == 'undefined')
+		if (direction === undefined)
+			direction = 1;
+
+		if (x === undefined)
 			x = 0;
 
-		if (y == 'undefined')
+		if (y === undefined)
 			y = 0;
 
-		if (duration == 'undefined')
+		if (duration === undefined)
 			duration = 1000;
 
 
@@ -48,7 +51,7 @@ exports = Class(ui.View, function (supr)
 			canHandleEvents: false
 		});
 
-		var endY = y - textView.style.height * 3;
+		var endY = y - textView.style.height * 3 * direction;
 		var that = this;
 		animate(textView).wait(duration).then({y: endY, opacity: 0 }, 200).then( function(){that.removeItem(textView);});
 	}
