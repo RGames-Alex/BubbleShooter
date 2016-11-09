@@ -25,4 +25,6 @@ exports = function(caller, numLines)
 			animate(n_item).now({x: pos.x, y: pos.y}, 200);
 		};
 	};
+
+	caller.soundPlayer.play('Swoosh');
 }

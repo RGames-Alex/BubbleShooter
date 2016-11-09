@@ -29,12 +29,11 @@ exports = Class(function()
 		this.fieldWidth = fieldW;
 		this.fieldHeight = fieldH;
 
-		if (itemPoolAmount === undefined)
-			itemPoolAmount = 625;
-
 		if (defaultViewContainer !== undefined)
 			__defaultViewContainer = defaultViewContainer;
 
+		if (itemPoolAmount === undefined)
+			itemPoolAmount = 625;
 		this._poolFieldItems(itemPoolAmount);
 	};
 
@@ -46,10 +45,12 @@ exports = Class(function()
 		this.gridHeight = this._getMaxGridHeight();
 		this.availableItemTypes = types;
 
-		__itemPool.updateAllOpts(
+		this.__itemPool.updateAllOpts(
 		{
 			width: this.itemSize,
 			height: this.itemSize,
+			scale: 1,
+			opacity: 1,
 			offsetX: -this.itemSize * .5,
 			offsetY: -this.itemSize * .5,
 			anchorX: -this.itemSize * .5,
@@ -73,8 +74,6 @@ exports = Class(function()
 
 	this.getDisconnectedItems = function()
 	{
-		console.log('getDisconnectedItems');
-
 		var output = [];
 		var that = this;
 
@@ -243,13 +242,13 @@ exports = Class(function()
 		if (__defaultViewContainer !== null)
 			__defaultViewContainer.removeSubview(item);
 
-		__itemPool.returnItemToPool(item);
+		this.__itemPool.returnItemToPool(item);
 		return item;
 	};
 
 	this.getItem = function(posX, posY, type, x, y, register)
 	{
-		var item = __itemPool.getItem();
+		var item = this.__itemPool.getItem();
 		item.posX = (posX !== undefined) ? posX : -1;
 		item.posY = (posY !== undefined) ? posY : -1;
 
@@ -304,7 +303,7 @@ exports = Class(function()
 
 	this._poolFieldItems = function(num)
 	{
-		__itemPool = new ObjectPool(num, FieldItem);
+		this.__itemPool = new ObjectPool(num, FieldItem);
 	};
 
 	// TODO: calculate real size
@@ -317,7 +316,7 @@ exports = Class(function()
 	// TODO: refactor this, remove unneeded arguments
 	this._getMaxGridHeight = function()
 	{
-		return Math.floor( this.fieldHeight / this.itemSize * .85);
+		return Math.floor( this.fieldHeight / (this.itemSize * .85) );
 	};
 
 });

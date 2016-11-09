@@ -21,7 +21,10 @@ exports = function(caller, items)
 	textX /= items.length;
 	textY /= items.length;
 
-	caller.floatingTextViewer.showText( items.length * 50, textX, textY, 700, -1 );
+	var score = items.length * 50;
+
+	caller.floatingTextViewer.showText( score, textX, textY, 700, -1 );
+	caller._addScore(score);
 
 	animate(this).wait(450).then( function(){ removeItems(caller, items) });
 }

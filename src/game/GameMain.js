@@ -1,12 +1,16 @@
 import ui.View;
+import ui.TextView as TextView;
 import .GridField;
 import .AimingArrow;
 import .ShotCounter;
 import .FloatingText;
+import .SoundPlayer;
+import .utils.ParticlePlayer as ParticlePlayer;
 import .actions.CalculateItemPath as calculatePath;
 import .actions.PopMatchingItems as popItems;
 import .actions.AddLines as addLines;
 import .actions.DropItems as dropItems;
+import .actions.ExplodeField as explodeField;
 import animate;
 
 
@@ -28,15 +32,22 @@ exports = Class(ui.View, function(supr)
 		availableItems: [0, 1, 2],
 	};
 
+	this.currentScore = 0;
+
 	this.gridFieldInstance;
 	this.shotCounter;
 	this.floatingTextViewer;
+	this.soundPlayer;
+	this.particlePlayer;
 	
 	this.shotFieldItems = [];
 	this.nextShotPoint = {x: 0, y: 0};
 	this.followupShotPoint = {x: 0, y: 0};
 
 	this.aimingArrow;
+
+	this.shotCounterTextView;
+	this.scoreTextView;
 
 	this.__inited = false;
 	this._canShoot = false;
@@ -60,11 +71,15 @@ exports = Class(ui.View, function(supr)
 		this._createShotCounter();
 		this._setupAimingArrow();
 		this._setupFloatingText();
+		this._setupTextViews();
+		this._setupSoundPlayer();
+		this._setupParticlePlayer();
 	};
 
 	this.buildLevel = function(levelData)
 	{
 		this.gridFieldInstance.reset();
+		this._resetShotFieldItems();
 
 		this.currentLevelData = levelData;
 		this.gridFieldInstance.build(this.currentLevelData.startGridWidth, this.currentLevelData.startGridHeight, this.currentLevelData.availableItems);
@@ -72,11 +87,13 @@ exports = Class(ui.View, function(supr)
 		this._setupShotCounter(levelData.minMoves, levelData.maxMoves);
 		this._setupShotItems();
 		this._addInputListeners();
+		this._resetScore();
 	};
 
 	// PRIVATE METHODS
 	this.shoot = function()
 	{
+		// this.onGameWon();
 		if (this._canShoot == false)
 			return;
 		this._canShoot = false;
@@ -91,7 +108,7 @@ exports = Class(ui.View, function(supr)
 		for (var i = 0; i < path.length; i++)
 		{
 			var segment = path[i];
-			ballAnimation.then({x: segment.x, y: segment.y}, 200);
+			ballAnimation.then({x: segment.x, y: segment.y}, 200).then(bind(this, function(){this.soundPlayer.play('Hit');}));
 		}
 		var finalBallPoint = path[path.length - 1];
 		var ballFinalPos = this.gridFieldInstance.getItemPosByCoords(finalBallPoint.x, finalBallPoint.y);
@@ -110,9 +127,15 @@ exports = Class(ui.View, function(supr)
 
 		var connectedChain = this.gridFieldInstance.getConnectedItemsByType(shotItem.posX, shotItem.posY, shotItem.typeIndex);
 		if (connectedChain.length > 2)
+		{
 			popItems(this, connectedChain);
+		}	
 		else
+		{
 			this.shotCounter.step();
+			var counterText = "Counter: " + this.shotCounter.getCounter();
+			this.shotCounterTextView.updateOpts({text: counterText});
+		}	
 
 		dropItems(this, this.gridFieldInstance.getDisconnectedItems());
 		
@@ -147,6 +170,9 @@ exports = Class(ui.View, function(supr)
 	{
 		this.shotCounter.setMinCounter(minMoves);
 		this.shotCounter.setMaxCounter(maxMoves);
+
+		var counterText = "Counter: " + this.shotCounter.getCounter();
+		this.shotCounterTextView.updateOpts({text: counterText});
 	};
 
 	this._setupShotItems = function()
@@ -189,6 +215,47 @@ exports = Class(ui.View, function(supr)
 		this.addSubview(this.floatingTextViewer);
 	}
 
+	this._setupSoundPlayer = function()
+	{
+		this.soundPlayer = new SoundPlayer();
+	};
+
+	this._setupTextViews = function()
+	{
+		this.scoreTextView = new TextView(
+		{
+			superview: this,
+			width: this.style.width,
+			height: this.style.height * .04,
+			horizontalAlign: 'right',
+			autoFontSize: true,
+			canHandleEvents: false,
+			text: 'Score: 0',
+			y: this.style.height - (this.style.height * .04) + 10,
+			fontFamily: 'HARRINGT',
+		});
+
+		this.shotCounterTextView = new TextView(
+		{
+			superview: this,
+			width: this.style.width,
+			height: this.style.height * .04,
+			horizontalAlign: 'left',
+			autoFontSize: true,
+			canHandleEvents: false,
+			text: 'Counter: 6',
+			y: this.style.height - (this.style.height * .04) + 10,
+			fontFamily: 'HARRINGT',
+		});
+	};
+
+	this._setupParticlePlayer = function()
+	{
+		this.particlePlayer = new ParticlePlayer(this.style.width, this.style.height);
+		this.particlePlayer.updateOpts({zIndex: 9999});
+		this.addSubview(this.particlePlayer);
+	}
+
 	this._addInputListeners = function()
 	{
 		if (this._listenersActive === true)
@@ -213,11 +280,53 @@ exports = Class(ui.View, function(supr)
 		this.shotCounter.unsubscribe('counter:rotationComplete', this, this.onCounterRotationComplete);
 	};
 
+	this._addScore = function(value)
+	{
+		this.currentScore += value;
+		this.scoreTextView.updateOpts({text: 'Score: ' + this.currentScore});
+
+		if (this.currentScore >= this.currentLevelData.scoreToBeat)
+		{
+			this.onGameWon();
+		}
+	}
+
+	this._resetScore = function()
+	{
+		this.currentScore = 0;
+		this.scoreTextView.updateOpts({text: 'Score: ' + this.currentScore});
+	};
+
+	this._resetShotFieldItems = function() 
+	{
+		if (this.shotFieldItems.length < 1)
+			return;
+
+		var currentItem;
+		for (var i = this.shotFieldItems.length - 1; i >= 0; i--)
+		{
+			currentItem = this.shotFieldItems[i];
+			this.gridFieldInstance.__itemPool.returnItemToPool(currentItem);
+			this.removeSubview(currentItem);
+
+			this.shotFieldItems.splice(i, 1);
+		}
+	};
+
+	this._emitGameWin = function()
+	{
+		this.emit(GAME_WON);
+	}
+
+	this._emitGameLoss = function()
+	{
+		this.emit(GAME_LOST);
+	}
+
 	// EVENT HANDLERS
 
 	this.onCounterRotationComplete = function()
 	{
-		console.log(this.currentLevelData);
 		addLines(this, this.currentLevelData.linesPerWave);
 	}
 
@@ -247,10 +356,12 @@ exports = Class(ui.View, function(supr)
 	{
 		this._removeInputListeners();
 
-		// adding shot items to the grid so that they'd be removed with other grid-items on reset
-		this.gridFieldInstance.registerItem(this.shotFieldItems[0]);
-		this.gridFieldInstance.registerItem(this.shotFieldItems[1]);
+		this._emitGameLoss();
+	}
 
-		this.emit(GAME_LOST);
+	this.onGameWon = function()
+	{
+		this._removeInputListeners();
+		explodeField(this, bind(this, this._emitGameWin));
 	}
 });

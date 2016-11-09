@@ -11,3 +11,6 @@ var messages = exports = [
 
 messages.victoryMessage = "You've beaten me, noooooo!";
 messages.lossMessage = "Haha, you can never win!";
+
+messages.gameGoalTutorial = "You can try to combine the bubbles to get more score and beat the level.\nNot that you'd be able to do it...";
+messages.gameLossWarningTutorial = "You will probably just lose anyway.\nReaching the bottom of the screen will ensure that.\nHa-ha-ha!";

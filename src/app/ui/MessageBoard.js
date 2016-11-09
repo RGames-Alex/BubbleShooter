@@ -22,7 +22,7 @@ exports = Class(ui.TextView, function(supr)
 	{
 		this.updateOpts({opacity: 0, text: message});
 
-		if (duration === 'undefined')
+		if (duration === undefined)
 			duration = 2000;
 
 		animate(this).now({opacity: 1}, 200).wait(duration).then({opacity: 0}, 200);

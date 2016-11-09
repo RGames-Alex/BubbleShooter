@@ -1,5 +1,6 @@
 import src.app.screens.TitleScreen as TitleScreen;
 import src.app.screens.GameScreen as GameScreen;
+import src.app.BackgroundMusicManager as BackgroundMusicManager;
 import ui.StackView as StackView;
 import device;
 
@@ -9,6 +10,7 @@ exports = Class(GC.Application, function ()
   this.gameScreenInstance;
 
   this.stackView;
+  this.musicManager;
 
   this.initUI = function () 
   {
@@ -16,19 +18,21 @@ exports = Class(GC.Application, function ()
 
   	this._buildScreens();
   	this._setupStackView();
+    this._setupMusicManager();
   };
 
   this.launchUI = function ()
   {
-	this.stackView.push(this.titleScreenInstance);
+    this.stackView.push(this.titleScreenInstance);
+    this.musicManager.play('menuLoop');
   };
 
   // PRIVATE METHODS
 
   this._buildScreens = function()
   {
-	this.titleScreenInstance = new TitleScreen(device.width, device.height);
-	this.titleScreenInstance.subscribe('titlescreen:press', this, this.onTitleScreenClicked);
+  	this.titleScreenInstance = new TitleScreen(device.width, device.height);
+  	this.titleScreenInstance.subscribe('titlescreen:press', this, this.onTitleScreenClicked);
   	
   	this.gameScreenInstance = new GameScreen(device.width, device.height);
   	this.gameScreenInstance.subscribe('gamescreen:exit', this, this.onGameScreenExit);
@@ -48,6 +52,11 @@ exports = Class(GC.Application, function ()
   	});
   };
 
+  this._setupMusicManager = function()
+  {
+    this.musicManager = new BackgroundMusicManager();
+  };
+
   // EVENT HANDLERS
 
   this.onTitleScreenClicked = function()
@@ -55,13 +64,17 @@ exports = Class(GC.Application, function ()
   	this.stackView.pop(true);
   	this.stackView.push(this.gameScreenInstance, true);
   	this.gameScreenInstance.startup();
+
+    this.musicManager.play('gameLoop');
   };
 
   this.onGameScreenExit = function()
   {
-	this.stackView.pop(true);
+    this.stackView.pop(true);
   	this.stackView.push(this.titleScreenInstance, true);
   	this.titleScreenInstance.fadeIn();
+
+    this.musicManager.play('menuLoop');
   };
 
 
