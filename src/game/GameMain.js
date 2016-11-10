@@ -193,6 +193,7 @@ exports = Class(ui.View, function(supr)
 	{
 		this.shotCounter.setMinCounter(minMoves);
 		this.shotCounter.setMaxCounter(maxMoves);
+		this.shotCounter.setCurrentValue(maxMoves);
 
 		var counterText = "Counter: " + this.shotCounter.getCounter();
 		this.shotCounterTextView.updateOpts({text: counterText});
