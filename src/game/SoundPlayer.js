@@ -3,6 +3,8 @@ import AudioManager;
 const ZAP_SOUND = 'Zap';
 const HIT_SOUND = 'Hit';
 const SWOOSH_SOUND = 'Swoosh';
+const SHOOTING_SOUND = 'Shooting';
+const POP_SOUND = 'Pop';
 
 exports = Class(function()
 {
@@ -60,6 +62,44 @@ exports = Class(function()
 					volume: 1,
 					background: false,
 				},
+
+				Shooting1:
+				{
+					path: 'effects',
+					volume: 1,
+					background: false,
+				},
+
+				Pop1:
+				{
+					path: 'effects',
+					volume: 1,
+					background: false,
+				},
+				Pop2:
+				{
+					path: 'effects',
+					volume: 1,
+					background: false,
+				},
+				Pop3:
+				{
+					path: 'effects',
+					volume: 1,
+					background: false,
+				},
+				Pop4:
+				{
+					path: 'effects',
+					volume: 1,
+					background: false,
+				},
+				Pop5:
+				{
+					path: 'effects',
+					volume: 1,
+					background: false,
+				},
 			}
 		});
 
@@ -85,6 +125,17 @@ exports = Class(function()
 			{
 				var effectNumber = Math.floor(Math.random() * 3) + 1;
 				this._currentTune = 'Swoosh' + effectNumber;
+				break;
+			}
+			case SHOOTING_SOUND:
+			{
+				this._currentTune = 'Shooting1';
+				break;
+			}
+			case POP_SOUND:
+			{
+				var effectNumber = Math.floor(Math.random() * 5) + 1;
+				this._currentTune = 'Pop' + effectNumber;
 				break;
 			}
 			default:

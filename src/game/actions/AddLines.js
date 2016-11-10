@@ -17,9 +17,10 @@ exports = function(caller, numLines)
 	{
 		for (var v = 0; v < numLines; v++)
 		{
+			var spawnPos = caller.gridFieldInstance.getItemCoordsByPos( u, -1);
 			var pos = caller.gridFieldInstance.getItemCoordsByPos( u, v );
 
-			var n_item = caller.gridFieldInstance.getItem();
+			var n_item = caller.gridFieldInstance.getItem(undefined, undefined, undefined, spawnPos.x, spawnPos.y);
 			n_item.posX = u;
 			n_item.posY = v;
 			animate(n_item).now({x: pos.x, y: pos.y}, 200);

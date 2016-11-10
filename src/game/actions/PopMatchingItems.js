@@ -1,8 +1,11 @@
 import animate;
 import src.game.utils.Shaker as shake;
 
-exports = function(caller, items)
+exports = function(caller, items, trackScore)
 {
+	if (trackScore === undefined)
+		trackScore = true;
+
 	var textX = 0;
 	var textY = 0;
 
@@ -21,10 +24,15 @@ exports = function(caller, items)
 	textX /= items.length;
 	textY /= items.length;
 
-	var score = items.length * 30;
+	
 
-	caller.floatingTextViewer.showText( score, textX, textY, 700 );
-	caller._addScore(score);
+	if (trackScore === true)
+	{
+		var score = items.length * 30;
+		
+		caller.floatingTextViewer.showText( score, textX, textY, 700 );
+		caller._addScore(score);
+	}
 
 	animate(this).wait(210).then( function(){ removeItems(caller, items) });
 

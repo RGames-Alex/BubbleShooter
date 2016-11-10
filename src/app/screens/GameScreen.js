@@ -39,7 +39,6 @@ exports = Class(ui.View, function(supr)
 
 		this._buildLevel(this.currentLevel);
 
-		// TODO: bring this back when testing is over
 		var that = this;
 		this.gameInstance.updateOpts({opacity: 0, canHandleEvents: false});
 		animate(this.gameInstance).wait(2500).then({opacity: 1}, 500).then( function() {that.gameInstance.updateOpts({canHandleEvents: true}); } );
@@ -114,6 +113,9 @@ exports = Class(ui.View, function(supr)
 	this.onLevelLost = function()
 	{
 		this.currentLevel = 0;
+
+		animate(this).clear();
+		this.gameMasterTextPlayer.stop();
 		
 		this.messageTextView.showMessage(GMMessages.lossMessage, 2000);
 		this.gameMasterTextPlayer.play('gameLoss');

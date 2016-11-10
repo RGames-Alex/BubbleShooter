@@ -1,7 +1,6 @@
 import ui.View;
 import ui.TextView as TextView;
 import .GridField;
-import .AimingArrow;
 import .ShotCounter;
 import .FloatingText;
 import .SoundPlayer;
@@ -44,8 +43,6 @@ exports = Class(ui.View, function(supr)
 	this.nextShotPoint = {x: 0, y: 0};
 	this.followupShotPoint = {x: 0, y: 0};
 
-	this.aimingArrow;
-
 	this.shotCounterTextView;
 	this.scoreTextView;
 
@@ -69,7 +66,6 @@ exports = Class(ui.View, function(supr)
 
 		this._createGridField();
 		this._createShotCounter();
-		this._setupAimingArrow();
 		this._setupFloatingText();
 		this._setupTextViews();
 		this._setupSoundPlayer();
@@ -86,19 +82,21 @@ exports = Class(ui.View, function(supr)
 		this._calculateShotPoints();
 		this._setupShotCounter(levelData.minMoves, levelData.maxMoves);
 		this._setupShotItems();
+		addLines(this, this.currentLevelData.startGridHeight);
 		this._addInputListeners();
-		this._resetScore();
 	};
 
 	// PRIVATE METHODS
 	this.shoot = function()
 	{
-		// this.onGameWon();
 		if (this._canShoot == false)
 			return;
 		this._canShoot = false;
 
+		this.soundPlayer.play('Shooting');
+
 		var targetBall = this.shotFieldItems.pop();
+		this.gridFieldInstance.registerItem(targetBall);
 
 		var angleInRad = Math.atan2(this._mouseY - targetBall.style.y, this._mouseX - targetBall.style.x);
 		var itemRadius = this.gridFieldInstance.itemSize * .5;
@@ -108,7 +106,20 @@ exports = Class(ui.View, function(supr)
 		for (var i = 0; i < path.length; i++)
 		{
 			var segment = path[i];
-			ballAnimation.then({x: segment.x, y: segment.y}, 200).then(bind(this, function(){this.soundPlayer.play('Hit');}));
+			if (i < path.length - 1)
+				ballAnimation.then({x: segment.x, y: segment.y}, 200).then(bind(this, function()
+					{
+						this.soundPlayer.play('Hit');
+						var targetX = (targetBall.style.x > this.style.width * .5) ? targetBall.style.x + targetBall.style.width * .5 : targetBall.style.x + targetBall.style.width * -.5;
+						var targetY = targetBall.style.y;
+						var targetDirection = (targetBall.style.x > this.style.width * .5) ? -1 : 1;
+						this.particlePlayer.addDirectionalSparks(targetX, targetY, targetDirection);
+					}));
+			else
+				ballAnimation.then({x: segment.x, y: segment.y}, 200).then(bind(this, function()
+					{
+						this.soundPlayer.play('Hit');
+					}));
 		}
 		var finalBallPoint = path[path.length - 1];
 		var ballFinalPos = this.gridFieldInstance.getItemPosByCoords(finalBallPoint.x, finalBallPoint.y);
@@ -123,24 +134,36 @@ exports = Class(ui.View, function(supr)
 
 	this._evaluateShot = function(shotItem)
 	{
-		this.gridFieldInstance.registerItem(shotItem);
+
+		// hard-fix to having items outside of grid bounds
+		if (shotItem.posX < 0 || shotItem.posX >= this.gridFieldInstance.gridWidth)
+		{
+			dropItems(this, [shotItem], false);
+			return;
+		}
 
 		var connectedChain = this.gridFieldInstance.getConnectedItemsByType(shotItem.posX, shotItem.posY, shotItem.typeIndex);
 		if (connectedChain.length > 2)
 		{
 			popItems(this, connectedChain);
+
+			dropItems(this, this.gridFieldInstance.getDisconnectedItems(), true);
 		}	
 		else
 		{
 			this.shotCounter.step();
 			var counterText = "Counter: " + this.shotCounter.getCounter();
 			this.shotCounterTextView.updateOpts({text: counterText});
+
+			dropItems(this, this.gridFieldInstance.getDisconnectedItems(), false);
 		}	
 
-		dropItems(this, this.gridFieldInstance.getDisconnectedItems());
+		
 		
 		if (this.gridFieldInstance.getLowestItemPos() >= this.gridFieldInstance.gridHeight - 1)
 			this.onGameLost();
+
+		
 	};
 
 	this._reload = function()
@@ -190,13 +213,6 @@ exports = Class(ui.View, function(supr)
 		this.shotFieldItems = [nextShot, currentShot];
 
 		this._canShoot = true;
-	};
-
-	// TODO: add this to the view
-	this._setupAimingArrow = function()
-	{
-		this.aimingArrow = new AimingArrow();
-		this.aimingArrow.style.opacity = 0;
 	};
 
 	this._createGridField = function()
@@ -263,7 +279,6 @@ exports = Class(ui.View, function(supr)
 		this._listenersActive = true;
 		
 		this.subscribe('InputSelect', this, this.onGameInputStart);
-		this.subscribe('InputOver', this, this.onGameInputOver);
 
 		this.shotCounter.subscribe('counter:rotationComplete', this, this.onCounterRotationComplete);
 	}
@@ -275,7 +290,6 @@ exports = Class(ui.View, function(supr)
 		this._listenersActive = false;
 
 		this.unsubscribe('InputSelect', this, this.onGameInputStart);
-		this.unsubscribe('InputOver', this, this.onGameInputOver);
 
 		this.shotCounter.unsubscribe('counter:rotationComplete', this, this.onCounterRotationComplete);
 	};
@@ -332,36 +346,23 @@ exports = Class(ui.View, function(supr)
 
 	this.onGameInputStart = function(e)
 	{
-		this.subscribe('InputMove', this, this.onGameInputPointMove);
-		this.aimingArrow.style.opacity = 1;
-
 		this._mouseX = e.srcPoint.x;
 		this._mouseY = e.srcPoint.y;
 
 		this.shoot();
 	};
 
-	this.onGameInputOver = function()
-	{
-		this.unsubscribe('InputMove', this, this.onGameInputPointMove);
-		this.aimingArrow.style.opacity = 0;
-	};
-
-	this.onGameInputPointMove = function()
-	{
-		// TODO: rotate the aimingArrow
-	};
-
 	this.onGameLost = function()
 	{
 		this._removeInputListeners();
-
+		this._resetScore();
 		this._emitGameLoss();
 	}
 
 	this.onGameWon = function()
 	{
 		this._removeInputListeners();
+
 		explodeField(this, bind(this, this._emitGameWin));
 	}
 });

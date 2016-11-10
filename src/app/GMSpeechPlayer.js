@@ -168,7 +168,7 @@ exports = Class(function()
 
 	this.stop = function ()
 	{
-		this._manager.stop();
+		this._manager.stop(this._currentTune);
 	}
 
 });

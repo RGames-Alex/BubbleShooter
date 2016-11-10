@@ -1,5 +1,6 @@
 import .ObjectPool;
 import .FieldItem;
+import animate;
 
 const evenDeltas = [ [-1, -1], [0, -1], [1, 0], [0, 1], [-1, 1], [-1, 0] ];
 const oddDeltas = [ [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 0] ];
@@ -56,16 +57,15 @@ exports = Class(function()
 			anchorX: -this.itemSize * .5,
 			anchorY: -this.itemSize * .5,
 		});
-
-		for ( var i = 0; i < w; i++ )
-			for ( var j = 0; j < h; j++ )
-				this.getItem(i, j);
-
-		return this.registeredItems;
 	};
 
 	this.reset = function()
 	{
+		for (var i=0; i < this.__itemPool.pool.length; i++)
+		{
+			animate(this.__itemPool.pool[i]).clear();
+		}
+
 		while (this.registeredItems.length > 0)
 		{
 			this.removeItem(this.registeredItems[0]);
